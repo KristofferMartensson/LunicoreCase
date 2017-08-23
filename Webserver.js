@@ -13,13 +13,13 @@ var db = new sqlite3.Database("carshop");
 
 db.serialize(() => {
     db.run("DROP TABLE IF EXISTS employees");
-db.run("CREATE TABLE employees(id INTEGER, name TEXT)");
+    db.run("CREATE TABLE employees(id INTEGER AUTOINCREMENT, name TEXT)");
 
-db.run("DROP TABLE IF EXISTS carmodels");
-db.run("CREATE TABLE carmodels(id INTEGER, brand TEXT, model TEXT, price INTEGER)");
+    db.run("DROP TABLE IF EXISTS carmodels");
+    db.run("CREATE TABLE carmodels(id INTEGER AUTOINCREMENT, brand TEXT, model TEXT, price INTEGER)");
 
-db.run("DROP TABLE IF EXISTS total_sales");
-db.run("CREATE TABLE total_sales(id INTEGER, employee_id INTEGER, carmodel_id INTEGER)");
+    db.run("DROP TABLE IF EXISTS total_sales");
+    db.run("CREATE TABLE total_sales(id INTEGER AUTOINCREMENT, employee_id INTEGER, carmodel_id INTEGER)");
 
 
 var stmt = db.prepare("INSERT INTO employees(id, name) VALUES (?,?)");
@@ -35,7 +35,6 @@ db.serialize(() => {
     var stmt2 = db.prepare("INSERT INTO carmodels(id, brand, model, price) VALUES (?,?,?,?)");
 for (i = 0; i < JSONobject.carshop.carmodels.length; i++) {
     var obj = JSONobject.carshop.carmodels[i];
-  //  console.log(obj.id, obj.brand, obj.model, obj.price)
     stmt2.run(obj.id, obj.brand, obj.model, obj.price);
 }
 stmt2.finalize();
@@ -46,18 +45,11 @@ db.serialize(() => {
     var stmt3 = db.prepare("INSERT INTO total_sales(id, employee_id, carmodel_id) VALUES (?,?,?)");
 for (i = 0; i < JSONobject.carshop.sales.length; i++) {
     var obj = JSONobject.carshop.sales[i];
-  //  console.log(obj.id, obj.employee_id, obj.carmodel_id);
     stmt3.run(obj.id, obj.employee_id, obj.carmodel_id);
 }
 stmt3.finalize();
 
 });
-
-
-
-
-
-
 
 function listening(){
     console.log("listening...");
@@ -82,6 +74,15 @@ function sendAllModels(request, response) {
 
 }
 
+function getPrice(carmodel_id, prices){
+    for (var price in prices){
+        if (prices[price].id == carmodel_id){
+            console.log("from getprice:" + prices[price].id);
+            return prices[price].price
+
+        }
+    }
+}
 
 app.get('/employees', sendAllEmployees);
 
@@ -107,20 +108,21 @@ function sendAllEmployees(request, response){
         db.each("SELECT rowid AS id, name FROM employees", function (err, row) {
         var employeeObject = {"id": row.id, "name" : row.name}
         employees.push(employeeObject);
-    },
-            function(err, NumberOfRows) {
+    }, function(err, NumberOfRows) {
             for (var obj in sales) {
-                console.log(sales[obj].employee_id)
-                totalSale[sales[obj].employee_id] += prices[sales[obj].carmodel_id - 1].price;
+
+                if (totalSale[sales[obj].employee_id] == undefined){
+                    totalSale[sales[obj].employee_id] = 0
                 }
-                console.log(totalSale[2]);
-        for (var employee in employees) {
-            var finalObject = {"id": employee.id, "name": employee.name, "sales": totalSale[employee.id]}
-            array.push(finalObject);
-        }
-            console.log(array);
-        response.send(JSON.stringify(array));
-    });
+                totalSale[sales[obj].employee_id] += getPrice(sales[obj].carmodel_id,prices);
+            }
+
+            for (var i in employees) {
+                var finalObject = {"id": employees[i].id, "name": employees[i].name, "sales": totalSale[employees[i].id]}
+                array.push(finalObject);
+            }
+            response.send(JSON.stringify(array));
+        });
 });
 }
 
@@ -131,25 +133,30 @@ function sendAllSales(request, response){
     db.serialize(() => {
 
         db.each("SELECT rowid AS id, employee_id, carmodel_id FROM total_sales", function (err, row) {
-        var object = {"id": row.id, "employee_id" : row.employee_id, "carmodel_id" : row.carmodel_id}
-        array.push(object);
-    }, function(err, NumberOfRows){
-        console.log(array);
-        response.send(JSON.stringify(array));
+            var object = {"id": row.id, "employee_id" : row.employee_id, "carmodel_id" : row.carmodel_id}
+            array.push(object);
+        }, function(err, NumberOfRows){
+            console.log(array);
+            response.send(JSON.stringify(array));
+        });
     });
-});
 }
+
+var bodyParser = require('body-parser');
+app.use(bodyParser.json());
 
 app.post('/carmodels', addModel);
 
 function addModel(req, response) {
-    var object = {"id" : 5, "brand" : req.body.brand, "model" : req.body.model, "price" : req.body.price}
+    console.log(req.body.model)
+    var object = {"brand" : req.body.brand, "model" : req.body.model, "price" : req.body.price}
+    console.log(object);
     db.serialize(() => {
-        var stmt2 = db.prepare("INSERT INTO carmodels(id, brand, model, price) VALUES (?,?,?,?)");
-        stmt2.run(object.id, object.brand, object.model, object.price);
+        var stmt2 = db.prepare("INSERT INTO carmodels(brand, model, price) VALUES (?,?,?)");
+        stmt2.run(object.brand, object.model, object.price);
 
-    stmt2.finalize();
-    response.send(JSON.stringify(object));
+        stmt2.finalize();
+        response.send(JSON.stringify(object));
 });
 
 
