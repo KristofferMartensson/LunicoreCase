@@ -4,4 +4,4 @@ För att köra webservern behövs NODE.
 Instruktioner:
 - Installera Node
 - Kör kommando 'npm install --save'
-- Starta med kommando 'node -webserver.js'
+- Starta med kommando 'node webserver.js'
