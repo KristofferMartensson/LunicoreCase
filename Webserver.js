@@ -25,7 +25,7 @@ db.serialize(() => {
     db.run("CREATE TABLE total_sales(id INTEGER, employee_id INTEGER, carmodel_id INTEGER)");
 
 
-var stmt = db.prepare("INSERT INTO employees(id, name) VALUES (?,?)");
+    var stmt = db.prepare("INSERT INTO employees(id, name) VALUES (?,?)");
     for (i = 0; i < JSONobject.carshop.employees.length; i++) {
         var obj = JSONobject.carshop.employees[i];
         stmt.run(obj.id, obj.name);
@@ -37,8 +37,8 @@ var stmt = db.prepare("INSERT INTO employees(id, name) VALUES (?,?)");
 db.serialize(() => {
     var stmt2 = db.prepare("INSERT INTO carmodels(id, brand, model, price) VALUES (?,?,?,?)");
     for (i = 0; i < JSONobject.carshop.carmodels.length; i++) {
-    var obj = JSONobject.carshop.carmodels[i];
-    stmt2.run(obj.id, obj.brand, obj.model, obj.price);
+        var obj = JSONobject.carshop.carmodels[i];
+        stmt2.run(obj.id, obj.brand, obj.model, obj.price);
     }
     stmt2.finalize();
 });
@@ -67,14 +67,12 @@ function sendAllModels(request, response) {
             response.send(JSON.stringify(array));
             });
     });
-
 }
 
 function getPrice(carmodel_id, prices){
     for (var price in prices){
         if (prices[price].id == carmodel_id){
             return prices[price].price
-
         }
     }
 }
@@ -91,8 +89,8 @@ function sendAllEmployees(request, response){
     db.serialize(() => {
 
         db.each("SELECT rowid AS id, price FROM carmodels", function (err,row){
-        var priceObject = {"id": row.id, "price" : row.price}
-        prices.push(priceObject);
+            var priceObject = {"id": row.id, "price" : row.price}
+            prices.push(priceObject);
         });
 
     db.each("SELECT rowid AS id, employee_id, carmodel_id FROM total_sales", function (err,row){
@@ -101,9 +99,9 @@ function sendAllEmployees(request, response){
     });
 
         db.each("SELECT rowid AS id, name FROM employees", function (err, row) {
-        var employeeObject = {"id": row.id, "name" : row.name}
-        employees.push(employeeObject);
-    }, function(err, NumberOfRows) {
+            var employeeObject = {"id": row.id, "name" : row.name}
+            employees.push(employeeObject);
+        }, function(err, NumberOfRows) {
             for (var obj in sales) {
 
                 if (totalSale[sales[obj].employee_id] == undefined){
@@ -118,7 +116,7 @@ function sendAllEmployees(request, response){
             }
             response.send(JSON.stringify(array));
         });
-});
+    });
 }
 
 app.get('/total_sales', sendAllSales);
